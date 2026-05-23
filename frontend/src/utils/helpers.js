@@ -65,13 +65,15 @@ export function classNames(...classes) {
 export function parseError(error) {
   if (error.response) {
     const data = error.response.data;
+    if (data?.error?.message) return data.error.message;
+    if (data?.message) return data.message;
     if (data.detail) {
       if (Array.isArray(data.detail)) {
         return data.detail.map((d) => d.msg || d).join(', ');
       }
       return typeof data.detail === 'string' ? data.detail : data.detail.message || 'Request failed';
     }
-    return data.message || 'Request failed';
+    return 'Request failed';
   }
   return error.message || 'Something went wrong';
 }

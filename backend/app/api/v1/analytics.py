@@ -21,6 +21,46 @@ from app.core.exceptions import PrepPilotException, NotFoundError
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 
+@router.get("/trends")
+async def trends(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_user)],
+    period: str = "30d",
+):
+    """Score trends over recent sessions."""
+    try:
+        data = await AnalyticsService.get_trends(db, user.id, period)
+        return success_response(data)
+    except PrepPilotException as exc:
+        return error_response(exc.message, exc.error_code, exc.status_code, exc.details)
+
+
+@router.get("/skills")
+async def skills(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_user)],
+):
+    """Skill radar chart data."""
+    try:
+        data = await AnalyticsService.get_skills(db, user.id)
+        return success_response(data)
+    except PrepPilotException as exc:
+        return error_response(exc.message, exc.error_code, exc.status_code, exc.details)
+
+
+@router.get("/weaknesses")
+async def weaknesses(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_user)],
+):
+    """Weakness heatmap by topic."""
+    try:
+        data = await AnalyticsService.get_weaknesses(db, user.id)
+        return success_response(data)
+    except PrepPilotException as exc:
+        return error_response(exc.message, exc.error_code, exc.status_code, exc.details)
+
+
 @router.get("/summary")
 async def user_summary(
     db: Annotated[AsyncSession, Depends(get_db)],

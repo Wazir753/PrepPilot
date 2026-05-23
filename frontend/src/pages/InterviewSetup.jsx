@@ -38,16 +38,17 @@ function InterviewSetup() {
       return;
     }
     try {
-      const { data } = await startInterview({
+      const result = await startInterview({
         role: form.role,
         interview_type: form.interviewType,
         difficulty: form.difficulty,
       });
+      const interviewData = result?.data || result;
       toast.success('Interview started!');
       if (form.interviewType === 'coding') {
-        history.push(`/interview/coding/${data.id}`);
+        history.push(`/interview/coding/${interviewData.id}`);
       } else {
-        history.push(`/interview/live/${data.id}`);
+        history.push(`/interview/live/${interviewData.id}`);
       }
     } catch (err) {
       toast.error(err.message);

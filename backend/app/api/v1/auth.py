@@ -79,3 +79,47 @@ async def logout(current_user: Annotated[User, Depends(get_current_user)]):
 async def me(current_user: Annotated[User, Depends(get_current_user)]):
     """Get current user profile."""
     return success_response(UserResponse.model_validate(current_user).model_dump(mode="json"))
+
+
+class ProfileUpdate(BaseModel):
+    """Update user profile fields."""
+
+    name: str | None = None
+    bio: str | None = None
+    target_role: str | None = None
+    avatar_url: str | None = None
+
+
+class PasswordChange(BaseModel):
+    """Change password request."""
+
+    current_password: str
+    new_password: str
+
+
+@router.put("/profile")
+async def update_profile(
+    body: ProfileUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Update current user profile."""
+    try:
+        user = await AuthService.update_profile(db, current_user, body.model_dump(exclude_unset=True))
+        return success_response(UserResponse.model_validate(user).model_dump(mode="json"))
+    except PrepPilotException as exc:
+        return error_response(exc.message, exc.error_code, exc.status_code, exc.details)
+
+
+@router.post("/change-password")
+async def change_password(
+    body: PasswordChange,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Change password for current user."""
+    try:
+        await AuthService.change_password(db, current_user, body.current_password, body.new_password)
+        return success_response({"message": "Password updated successfully"})
+    except PrepPilotException as exc:
+        return error_response(exc.message, exc.error_code, exc.status_code, exc.details)

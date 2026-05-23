@@ -106,10 +106,14 @@ export function InterviewProvider({ children }) {
     try {
       const data = await interviewService.getById(id);
       setInterview(data);
+      const existingResponses = await interviewService.listResponses(id);
+      setResponses(existingResponses || []);
       if (data.status === 'in_progress') {
         setIsLive(true);
         startTimer();
         setupWsListeners(id);
+        const question = await interviewService.getNextQuestion(id);
+        setCurrentQuestion(question);
       }
       return data;
     } catch (err) {
@@ -123,23 +127,33 @@ export function InterviewProvider({ children }) {
 
   const submitAnswer = useCallback(
     async (answer, audioUrl = null) => {
-      if (!interview) return null;
+      if (!interview || !currentQuestion) return null;
       setLoading(true);
       try {
         const payload = {
-          question_id: currentQuestion?.id,
+          question_number: currentQuestion.question_number,
+          question_text: currentQuestion.question_text,
           answer_text: answer,
           audio_url: audioUrl,
-          transcript,
+          response_time_seconds: elapsedSeconds,
         };
-        const data = await interviewService.submitResponse(interview.id, payload);
-        setResponses((prev) => [...prev, data]);
+        const saved = await interviewService.submitResponse(interview.id, payload);
         websocketService.sendResponse(interview.id, payload);
-        const next = await interviewService.getNextQuestion(interview.id);
+
+        const evaluated = await interviewService.evaluateResponse(saved.id, {
+          answer_text: answer,
+          question_text: currentQuestion.question_text,
+          role: interview.role,
+          difficulty: interview.difficulty,
+        });
+        setResponses((prev) => [...prev, evaluated]);
+        setFeedback(evaluated.ai_feedback || evaluated);
+
+        const previousScore = evaluated.score ?? evaluated.technical_score;
+        const next = await interviewService.getNextQuestion(interview.id, previousScore);
         setCurrentQuestion(next);
         setTranscript('');
-        setFeedback(null);
-        return data;
+        return evaluated;
       } catch (err) {
         const msg = parseError(err);
         setError(msg);
@@ -148,7 +162,7 @@ export function InterviewProvider({ children }) {
         setLoading(false);
       }
     },
-    [interview, currentQuestion, transcript]
+    [interview, currentQuestion, elapsedSeconds]
   );
 
   const endInterview = useCallback(async () => {
@@ -157,7 +171,7 @@ export function InterviewProvider({ children }) {
     setLoading(true);
     try {
       websocketService.endInterview(interview.id);
-      const data = await interviewService.endInterview(interview.id);
+      const data = await interviewService.endInterview(interview.id, elapsedSeconds);
       setInterview(data);
       setIsLive(false);
       websocketService.disconnect();

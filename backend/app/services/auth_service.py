@@ -107,3 +107,23 @@ class AuthService:
         if not user:
             raise NotFoundError("User not found")
         return UserResponse.model_validate(user)
+
+    @staticmethod
+    async def update_profile(db: AsyncSession, user: User, updates: dict) -> User:
+        """Update mutable user profile fields."""
+        for key, value in updates.items():
+            if value is not None and hasattr(user, key):
+                setattr(user, key, value)
+        await db.flush()
+        await db.refresh(user)
+        return user
+
+    @staticmethod
+    async def change_password(
+        db: AsyncSession, user: User, current_password: str, new_password: str
+    ) -> None:
+        """Verify current password and set a new hash."""
+        if not verify_password(current_password, user.password_hash):
+            raise UnauthorizedError("Current password is incorrect")
+        user.password_hash = get_password_hash(new_password)
+        await db.flush()

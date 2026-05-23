@@ -16,41 +16,46 @@ const interviewService = {
     return data;
   },
 
-  async update(id, updates) {
-    const { data } = await api.patch(`/interviews/${id}`, updates);
+  async submitResponse(interviewId, payload) {
+    const { data } = await api.post(`/responses/interview/${interviewId}`, payload);
     return data;
   },
 
-  async submitResponse(interviewId, response) {
-    const { data } = await api.post(`/interviews/${interviewId}/responses`, response);
+  async evaluateResponse(responseId, evaluationPayload) {
+    const { data } = await api.post(`/responses/${responseId}/evaluate`, evaluationPayload);
     return data;
   },
 
-  async endInterview(id) {
-    const { data } = await api.post(`/interviews/${id}/end`);
+  async listResponses(interviewId) {
+    const { data } = await api.get(`/responses/interview/${interviewId}`);
     return data;
   },
 
-  async getQuestions(id) {
-    const { data } = await api.get(`/interviews/${id}/questions`);
+  async getNextQuestion(id, previousScore = null) {
+    const { data } = await api.post(`/questions/${id}/next`, {
+      previous_score: previousScore,
+    });
     return data;
   },
 
-  async getNextQuestion(id) {
-    const { data } = await api.post(`/interviews/${id}/next-question`);
+  async endInterview(id, durationSeconds = null) {
+    const { data } = await api.post(`/interviews/${id}/complete`, {
+      duration_seconds: durationSeconds,
+    });
     return data;
   },
 
   async getReplay(id) {
-    const { data } = await api.get(`/interviews/${id}/replay`);
-    return data;
+    const responses = await this.listResponses(id);
+    const interview = await this.getById(id);
+    return { interview, responses };
   },
 
   async downloadReport(id) {
-    const { data } = await api.get(`/interviews/${id}/report`, {
+    const response = await api.get(`/analytics/report/${id}/pdf`, {
       responseType: 'blob',
     });
-    return data;
+    return response.data;
   },
 };
 
