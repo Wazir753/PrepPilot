@@ -1,0 +1,2 @@
+Favicon placeholder: replace with favicon.ico (binary).
+Suggested: 32x32 PNG with PrepPilot logo (#6C63FF rocket icon on #0A0A0F background).
