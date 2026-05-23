@@ -30,7 +30,18 @@ function processQueue(error, token = null) {
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const body = response.data;
+    if (body && typeof body.success === 'boolean') {
+      if (!body.success) {
+        const err = new Error(body.error?.message || 'Request failed');
+        err.response = response;
+        return Promise.reject(err);
+      }
+      response.data = body.data;
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
