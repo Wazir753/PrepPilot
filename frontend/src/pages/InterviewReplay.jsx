@@ -11,8 +11,7 @@ import Badge from '../components/common/Badge';
 import Spinner from '../components/common/Spinner';
 import ProgressBar from '../components/common/ProgressBar';
 import interviewService from '../services/interviewService';
-import { formatDuration, formatDate, parseError, downloadBlob } from '../utils/helpers';
-import { capitalize } from '../utils/helpers';
+import { formatDuration, formatDate, parseError, downloadBlob, capitalize } from '../utils/helpers';
 import { fadeInUp } from '../utils/animations';
 
 function InterviewReplay() {
